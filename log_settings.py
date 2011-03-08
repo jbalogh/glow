@@ -37,7 +37,7 @@ cfg = {
 
 
 if settings.USE_SYSLOG:
-    cfg['root']['handlers'][0] = 'syslog'
+    cfg['root']['handlers'].append('syslog')
 
 
 dictconfig.dictConfig(cfg)

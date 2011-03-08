@@ -1,9 +1,14 @@
 #!/usr/bin/env python
+import os
 import site
 import sys
 
+ROOT = os.path.dirname(os.path.abspath(__file__))
+path = lambda *a: os.path.join(ROOT, *a)
+
 # Add vendor so we can import 3rd-party libs.
-site.addsitedir('vendor')
+site.addsitedir(ROOT)
+site.addsitedir(path('vendor'))
 
 import argparse
 

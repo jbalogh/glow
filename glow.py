@@ -22,13 +22,13 @@ hbase = hb.Client(settings.HBASE_HOST, settings.HBASE_PORT,
                   settings.HBASE_TABLES['realtime'])
 
 # Maps {country: continent}.
-continents = json.load(open('continents.json'))
+continents = json.load(open(settings.path('continents.json')))
 
 # Maps {country code: name}.
-countries = json.load(open('countries.json'))
+countries = json.load(open(settings.path('countries.json')))
 
 # Maps {country code: {region code: name}}.
-regions = json.load(open('regions.json'))
+regions = json.load(open(settings.path('regions.json')))
 geo = (continents, countries, regions)
 
 # We're not supposed to show downloads for these countries (607127#c10):
