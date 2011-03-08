@@ -2,3 +2,4 @@ settings_local.py
 glow.pickle
 data
 glow.log
+vendor/bin
