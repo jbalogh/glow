@@ -25,7 +25,7 @@ cfg = {
         },
         'syslog': {
             '()': logging.handlers.SysLogHandler,
-            'facility': logging.handlers.SysLogHandler.LOG_LOCAL7,
+            'facility': logging.handlers.SysLogHandler.LOG_USER,
             'formatter': 'syslog',
         },
     },
