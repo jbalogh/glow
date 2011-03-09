@@ -128,7 +128,7 @@ def process_locations(rows):
                 continent = continents[country]
                 daisy[continent][country][region][city] += val
                 new.append((continent, country, region, city,
-                            float(lat), float(lon), val))
+                            lat, lon, val))
             except (KeyError, ValueError):
                 pass
         rv.append((total, new))
