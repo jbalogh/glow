@@ -17,3 +17,5 @@ BASE_DIR = path('data')
 
 USE_SYSLOG = False
 SYSLOG_TAG = 'http_app_glow'
+
+FIREFOX_VERSION = '4.0'

@@ -14,7 +14,7 @@ log = logging.getLogger('glow')
 
 
 # The default version number we look for.
-FX = '3.6'
+FX = settings.FIREFOX_VERSION
 JSON_DIR = os.path.join(settings.BASE_DIR, 'json')
 PICKLE = settings.path('glow.pickle')
 
