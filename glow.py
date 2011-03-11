@@ -6,6 +6,7 @@ import shutil
 import time
 from collections import defaultdict
 from datetime import datetime, timedelta
+from operator import itemgetter
 
 import hb
 import settings_local as settings
@@ -170,8 +171,9 @@ def get_daisy():
     """
     def unpack(dict_):
         """Unpack a (key, (v1, v2)) structure into (key, v1, v2)."""
-        return [(a, b, c) for a, (b, c) in dict_.iteritems()]
+        return revsort((a, b, c) for a, (b, c) in dict_.iteritems())
 
+    revsort = lambda xs: sorted(xs, key=itemgetter(1), reverse=True)
     continents, world_sum = {}, 0
     for continent, country_dict in G['daisy'].iteritems():
         countries, continent_sum = {}, 0
@@ -180,7 +182,7 @@ def get_daisy():
             for region, cities in region_dict.iteritems():
                 total = sum(cities.itervalues())
                 if total:
-                    regions[region] = [total, cities.items()]
+                    regions[region] = [total, revsort(cities.items())]
                     country_sum += total
             if country_sum:
                 countries[country] = [country_sum, unpack(regions)]
