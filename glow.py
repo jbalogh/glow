@@ -104,6 +104,7 @@ def extend_counts(counts):
     for t, count in counts:
         G['total'] += count
         G['counts'].append((t, G['total']))
+    G['counts'] = G['counts'][-60:]
 
 
 def process_locations(rows):
