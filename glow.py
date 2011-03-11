@@ -18,6 +18,7 @@ log = logging.getLogger('glow')
 FX = settings.FIREFOX_VERSION
 JSON_DIR = os.path.join(settings.BASE_DIR, 'json')
 PICKLE = settings.path('glow.pickle')
+BACKUP = PICKLE + '.bak'
 
 hbase = hb.Client(settings.HBASE_HOST, settings.HBASE_PORT,
                   settings.HBASE_TABLES['realtime'])
@@ -266,16 +267,25 @@ def main():
 def dump_state(dt):
     """Dump all the global aggregators so we can pick at the same spot."""
     log.info('Saving state for %s.' % dt)
+    if os.path.exists(PICKLE):
+        shutil.copyfile(PICKLE, BACKUP)
     d = {'G': G, 'last_update': dt}
     pickle.dump(d, open(PICKLE, 'w'))
 
 
 def load_state():
     """Figure out where we left off, catch up on old data if needed."""
-    if not os.path.exists(PICKLE):
+    if not (os.path.exists(PICKLE) or os.path.exists(BACKUP)):
         return
     log.info('Found a pickle, picking it up.')
-    d = pickle.load(open(PICKLE))
+    try:
+        d = pickle.load(open(PICKLE))
+    except Exception:
+        log.error('Trouble opening pickle.', exc_info=True)
+        if os.path.exists(BACKUP):
+            log.info('Loading backup pickle.')
+            d = pickle.load(open(BACKUP))
+
     for k, v in d['G'].items():
         G[k] = v
 
