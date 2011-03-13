@@ -70,7 +70,7 @@ def row_name(dt):
 
 def time_sequence(dt, num=100):
     for i in xrange(num):
-        yield dt + timedelta(minutes=i + 1)
+        yield dt + timedelta(minutes=i)
 
 
 def product(name=None):
@@ -214,33 +214,39 @@ def write_files(dt, count_data=None, map_data=None, daisy_data=None,
         if not data:
             continue
         fmt = '%Y/%m/%d/%H/%M/{name}.json'.format(name=name)
-        now = os.path.join(JSON_DIR, dt.strftime(fmt))
+        path = os.path.join(JSON_DIR, dt.strftime(fmt))
         next = (dt + timedelta(seconds=interval)).strftime(fmt)
-        makedirs(os.path.dirname(now))
+        makedirs(os.path.dirname(path))
         d = {'next': next, 'interval': interval, 'data': data}
-        json.dump(d, open(now, 'w'), separators=(',', ':'))
+        json.dump(d, open(path, 'w'), separators=(',', ':'))
 
 
-def collect(now):
+def collect(dt):
     """Grab Hbase data, write json files, save internal state."""
-    log.info('Fetching data for %s.' % now)
-    extend_counts(get_counts(now))
-    write_files(now, G['counts'], get_map(now), get_daisy())
-    dump_state(now)
+    log.info('Fetching data for %s.' % dt)
+    extend_counts(get_counts(dt))
+    write_files(dt, G['counts'], get_map(dt), get_daisy())
+    dump_state(dt)
+
+
+def now():
+    # Live one minute in the past so Hbase has time to collect a full minute of
+    # data before we start talking to it.
+    return datetime.utcnow() - timedelta(minutes=1)
 
 
 def do_the_stuff_to_the_thing():
-    now = datetime.now()
-    next = now + timedelta(minutes=1)
+    dt = now()
+    next = dt + timedelta(minutes=1)
     # Wait until :30 to give Hbase some processing time.
-    if now.second < 30:
+    if dt.second < 30:
         log.info('Waiting until :30 past.')
-        time.sleep(30 - now.second)
+        time.sleep(30 - dt.second)
 
-    collect(now)
+    collect(dt)
 
     # Sleep until the next minute comes around.
-    wait = next.replace(second=30) - datetime.now().replace(microsecond=0)
+    wait = next.replace(second=30) - now().replace(microsecond=0)
     # The delta will be around -1 days, 86400 seconds if we're into the next
     # minute already.
     if wait.seconds <= 60:
@@ -290,23 +296,23 @@ def load_state():
     for k, v in d['G'].items():
         G[k] = v
 
-    now = datetime.now()
-    delta = now - d['last_update'].replace(second=0)
+    dt = now()
+    delta = dt - d['last_update'].replace(second=0)
     if delta.seconds > 60:
         log.info('Missing %s minutes. Catching up.' % (delta.seconds / 60))
         for i in xrange(1, delta.seconds / 60):
             collect(d['last_update'] + timedelta(minutes=i))
 
     # Collect once more if the clock rolled over during catchup.
-    if datetime.now().minute != now.minute:
+    if now().minute != dt.minute:
         log.info('Rollover!')
-        collect(now)
+        load_state()
 
     # Wait until the next minute if the last update was at 1:15:00 and the
     # current time is less than 1:16:00 so we don't count twice.
-    if datetime.now().minute == d['last_update'].minute:
+    if now().minute == d['last_update'].minute:
         log.info('Waiting for the minute to roll over.')
-        time.sleep(60 - datetime.now().second)
+        time.sleep(60 - now().second)
 
 #
 # 4. Cleanup.
@@ -316,7 +322,7 @@ def load_state():
 def cleanup():
     # Delete all the data from two days ago. This expects to run in cron daily
     # so there won't be any data older than two days.
-    d = (datetime.now() - timedelta(days=2)).strftime('%Y/%m/%d')
+    d = (now() - timedelta(days=2)).strftime('%Y/%m/%d')
     path = os.path.join(JSON_DIR, d)
     if os.path.exists(path):
         log.info('Dropping %s.' % path)
