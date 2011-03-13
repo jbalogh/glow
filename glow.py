@@ -154,7 +154,7 @@ def get_map(dt, num=1, name=FX):
     # Get (time, num_rows, [(lat, long, hits)]) for each datetime.
     times = [(t, (num, [r[-3:] for r in rows]))
              for t, (num, rows) in _get_locations(dt, num, name)]
-    hits = [row for t in times for row in t[1][1]] * 60
+    hits = [row for t in times for row in t[1][1]]
     return (times[0][0], len(hits), hits)
 
 
