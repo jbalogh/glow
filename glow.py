@@ -209,8 +209,7 @@ def write_files(dt, count_data=None, map_data=None, arc_data=None,
                 interval=60):
     """Write all the data dicts we were given to their files."""
     log.info('Writing data for %s.' % dt)
-    xs = {'count': count_data, 'map': map_data, 'arc': arc_data,
-          'daisy': arc_data}
+    xs = {'count': count_data, 'map': map_data, 'arc': arc_data}
     for name, data in xs.items():
         if not data:
             continue
@@ -296,10 +295,6 @@ def load_state():
 
     for k, v in d['G'].items():
         G[k] = v
-
-    if 'daisy' in G:
-        G['arc'] = G['daisy']
-        del G['daisy']
 
     dt = now()
     delta = dt - d['last_update'].replace(second=0)
