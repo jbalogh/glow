@@ -46,18 +46,18 @@ REDACTED = ('CU', 'IR', 'SY', 'KP', 'MM', 'SD')
 G = {
     'total': 0,
     'counts': [],
-    'daisy': {},
+    'arc': {},
 }
 
 # The global locale count aggregator.
 # {continent: {country: {region: {city: total}}}}
-G['daisy'] = dict((k, {}) for k in continents.values())
+G['arc'] = dict((k, {}) for k in continents.values())
 for country, continent in continents.items():
-    G['daisy'][continent][country] = {}
+    G['arc'][continent][country] = {}
 for country, regions in regions.items():
     continent = continents[country]
     for region in regions:
-        G['daisy'][continent][country][region] = defaultdict(int)
+        G['arc'][continent][country][region] = defaultdict(int)
 
 
 def row_name(dt):
@@ -112,10 +112,10 @@ def process_locations(rows):
     Break up the hbase rows into a list of
     [(continent, country, region, city, lat, lon, num_downloads)].
 
-    The cumulative count in `daisy` is updated inline.
+    The cumulative count in `arc` is updated inline.
     """
     # Get local names for fast lookups in the loop.
-    daisy = G['daisy']
+    arc = G['arc']
     continents, countries, regions = geo
     rv = []
     total = 0
@@ -129,7 +129,7 @@ def process_locations(rows):
                 continue
             try:
                 continent = continents[country]
-                daisy[continent][country][region][city] += val
+                arc[continent][country][region][city] += val
                 new.append((continent, country, region, city,
                             lat, lon, val))
             except (KeyError, ValueError):
@@ -158,7 +158,7 @@ def get_map(dt, num=1, name=FX):
     return (times[0][0], len(hits), hits)
 
 
-def get_daisy():
+def get_arc():
     """
     Aggregate the location data into an easy json structure:
 
@@ -177,7 +177,7 @@ def get_daisy():
 
     revsort = lambda xs: sorted(xs, key=itemgetter(1), reverse=True)
     continents, world_sum = {}, 0
-    for continent, country_dict in G['daisy'].iteritems():
+    for continent, country_dict in G['arc'].iteritems():
         countries, continent_sum = {}, 0
         for country, region_dict in country_dict.iteritems():
             regions, country_sum = {}, 0
@@ -205,11 +205,12 @@ def makedirs(d):
         os.makedirs(d)
 
 
-def write_files(dt, count_data=None, map_data=None, daisy_data=None,
+def write_files(dt, count_data=None, map_data=None, arc_data=None,
                 interval=60):
     """Write all the data dicts we were given to their files."""
     log.info('Writing data for %s.' % dt)
-    xs = {'count': count_data, 'map': map_data, 'daisy': daisy_data}
+    xs = {'count': count_data, 'map': map_data, 'arc': arc_data,
+          'daisy': arc_data}
     for name, data in xs.items():
         if not data:
             continue
@@ -225,7 +226,7 @@ def collect(dt):
     """Grab Hbase data, write json files, save internal state."""
     log.info('Fetching data for %s.' % dt)
     extend_counts(get_counts(dt))
-    write_files(dt, G['counts'], get_map(dt), get_daisy())
+    write_files(dt, G['counts'], get_map(dt), get_arc())
     dump_state(dt)
 
 
@@ -295,6 +296,10 @@ def load_state():
 
     for k, v in d['G'].items():
         G[k] = v
+
+    if 'daisy' in G:
+        G['arc'] = G['daisy']
+        del G['daisy']
 
     dt = now()
     delta = dt - d['last_update'].replace(second=0)
