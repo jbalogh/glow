@@ -124,7 +124,7 @@ def process_locations(rows):
         # We localize country names on the client.
         for key, val in row.columns.iteritems():
             total += val
-            _, country, region, city, lat, lon = key.split(':')
+            country, region, city, lat, lon = key.split(':')[-5:]
             if country in REDACTED:
                 continue
             try:
