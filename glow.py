@@ -119,8 +119,10 @@ def process_locations(rows):
                 new.append((continent, country, region, city,
                             lat, lon, val))
             except (KeyError, ValueError):
+                log.error('skipping key: %s' % key)
                 pass
         rv.append((total, new))
+    log.info('New map rows: %s.'% len(rv))
     return rv
 
 
