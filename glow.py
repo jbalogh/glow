@@ -21,7 +21,7 @@ PICKLE = settings.path('glow.pickle')
 BACKUP = PICKLE + '.bak'
 
 hbase = hb.Client(settings.HBASE_HOST, settings.HBASE_PORT,
-                  settings.HBASE_TABLES['realtime'])
+                  settings.HBASE_TABLES['new'])
 
 # Maps {country: continent}.
 continents = json.load(open(settings.path('continents.json')))
@@ -47,6 +47,7 @@ G = {
     'total': 0,
     'counts': [],
     'arc': {},
+    'version': 4,
 }
 
 # The global locale count aggregator.
@@ -62,10 +63,8 @@ for country, regions in regions.items():
 
 def row_name(dt):
     """Convert a datetime into the Hbase timestamp format."""
-    if isinstance(dt, datetime):
-        return dt.strftime('%Y-%m-%dT%H:%M:00.000')
-    else:
-        return dt
+    # TODO: mobile.
+    return 'firefox::%s:%s' % (FX, dt.strftime('%Y-%m-%dT%H:%M:00.000'))
 
 
 def time_sequence(dt, num=100):
@@ -73,30 +72,17 @@ def time_sequence(dt, num=100):
         yield dt + timedelta(minutes=i)
 
 
-def product(name=None):
-    if name:
-        # TODO: :mobile:
-        return 'product:firefox::' + name
-    else:
-        return 'product:'
+def row_sum(row):
+    return sum(row.columns.itervalues()) if row else 0
 
 
-def row_sum(row, prefix):
-    if row:
-        return sum(v for k, v in row.columns.iteritems()
-                   if k.startswith(prefix))
-    else:
-        return 0
-
-
-def get_counts(dt, num=1, name=FX):
+def get_counts(dt, num=1):
     """Get `num` minutes of download counts starting at `dt`."""
-    prefix = product(name)
     if num == 1:
-        rows = hbase.row(row_name(dt), [product()])
+        rows = hbase.row(row_name(dt), ['product'])
     else:
-        rows = hbase.scanner(row_name(dt), [product()]).list(num)
-    return [(t.utctimetuple()[:5], row_sum(row, prefix))
+        rows = hbase.scanner(row_name(dt), ['product']).list(num)
+    return [(t.utctimetuple()[:5], row_sum(row))
             for t, row in zip(time_sequence(dt, num), rows)]
 
 
@@ -138,7 +124,7 @@ def process_locations(rows):
     return rv
 
 
-def _get_locations(dt, num=1, name=FX):
+def _get_locations(dt, num=1):
     """Get `num` minutes of download locations starting at `dt`."""
     if num == 1:
         rows = hbase.row(row_name(dt), ['location:'])
@@ -149,12 +135,12 @@ def _get_locations(dt, num=1, name=FX):
             for t, r in zip(time_sequence(dt, num), locs)]
 
 
-def get_map(dt, num=1, name=FX):
+def get_map(dt, num=1):
     """Get a list of [`dt`, num_rows, [(lat, long, num_downloads)]]."""
     # Get (time, num_rows, [(lat, long, hits)]) for each datetime.
     times = [(t, (num, [r[-3:] for r in rows]))
-             for t, (num, rows) in _get_locations(dt, num, name)]
-    hits = [row for t in times for row in t[1][1]] * 20
+             for t, (num, rows) in _get_locations(dt, num)]
+    hits = [row for t in times for row in t[1][1]]
     return (times[0][0], len(hits), hits)
 
 
@@ -293,8 +279,11 @@ def load_state():
             log.info('Loading backup pickle.')
             d = pickle.load(open(BACKUP))
 
-    for k, v in d['G'].items():
-        G[k] = v
+    if d['G'].get('version') == G['version']:
+        for k, v in d['G'].items():
+            G[k] = v
+    else:
+        log.info('Skipping out of date pickle (want v%s).' % G['version'])
 
     dt = now()
     delta = dt - d['last_update'].replace(second=0)
