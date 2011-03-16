@@ -47,14 +47,18 @@ G = {
     'total': 0,
     'counts': [],
     'arc': {},
-    'version': 4,
+    'version': 5,
 }
+
+# This should be a lambda but pickle can't pickle a lambda.
+def defaultdict_int():
+    return defaultdict(int)
 
 # The global locale count aggregator.
 # {continent: {country: {region: {city: total}}}}
 G['arc'] = dict((k, {}) for k in continents.values())
 for country, continent in continents.items():
-    G['arc'][continent][country] = {}
+    G['arc'][continent][country] = defaultdict(defaultdict_int)
 for country, regions in regions.items():
     continent = continents[country]
     for region in regions:
@@ -104,7 +108,7 @@ def process_locations(rows):
     arc = G['arc']
     continents, countries, regions = geo
     rv = []
-    total = 0
+    total = skip = 0
     for row in rows:
         new = []
         # We localize country names on the client.
@@ -119,10 +123,11 @@ def process_locations(rows):
                 new.append((continent, country, region, city,
                             lat, lon, val))
             except (KeyError, ValueError):
-                log.error('skipping key: %s' % key)
+                log.error('skipping key: %s' % key, exc_info=True)
+                skip += 1
                 pass
         rv.append((total, new))
-    log.info('New map rows: %s.'% len(rv))
+    log.info('New map rows: %s (%s: %.2f).'% (total, skip, skip / float(total) * 100))
     return rv
 
 
@@ -161,7 +166,7 @@ def get_arc():
     """
     def unpack(dict_):
         """Unpack a (key, (v1, v2)) structure into (key, v1, v2)."""
-        return revsort((a, b, c) for a, (b, c) in dict_.iteritems())
+        return revsort((a.strip(), b, c) for a, (b, c) in dict_.iteritems())
 
     revsort = lambda xs: sorted(xs, key=itemgetter(1), reverse=True)
     continents, world_sum = {}, 0
@@ -172,7 +177,8 @@ def get_arc():
             for region, cities in region_dict.iteritems():
                 total = sum(cities.itervalues())
                 if total:
-                    regions[region] = [total, revsort(cities.items())]
+                    cs = [(k.strip(), v) for k, v in cities.iteritems()]
+                    regions[region] = [total, revsort(cs)]
                     country_sum += total
             if country_sum:
                 countries[country] = [country_sum, unpack(regions)]
