@@ -108,7 +108,7 @@ def process_locations(rows):
     arc = G['arc']
     continents, countries, regions = geo
     rv = []
-    total = skip = 0
+    total = 0
     for row in rows:
         new = []
         # We localize country names on the client.
@@ -124,10 +124,8 @@ def process_locations(rows):
                             lat, lon, val))
             except (KeyError, ValueError):
                 log.error('skipping key: %s' % key, exc_info=True)
-                skip += 1
                 pass
         rv.append((total, new))
-    log.info('New map rows: %s (%s: %.2f).'% (total, skip, skip / float(total) * 100))
     return rv
 
 
