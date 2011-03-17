@@ -123,6 +123,9 @@ def process_locations(rows):
                 if region.strip() in ('', '00'):
                     region = ''
                     log.debug('Renaming region: %s.' % key)
+                # (0, 0) means the download is from a satellite/proxy.
+                if float(lat) == float(lon) == 0:
+                    continue
                 continent = continents[country]
                 arc[continent][country][region][city] += val
                 new.append((continent, country, region, city,
