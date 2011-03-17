@@ -21,7 +21,7 @@ PICKLE = settings.path('glow.pickle')
 BACKUP = PICKLE + '.bak'
 
 hbase = hb.Client(settings.HBASE_HOST, settings.HBASE_PORT,
-                  settings.HBASE_TABLES['new'])
+                  settings.HBASE_TABLES['realtime'])
 
 # Maps {country: continent}.
 continents = json.load(open(settings.path('continents.json')))
