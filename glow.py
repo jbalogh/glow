@@ -47,7 +47,7 @@ G = {
     'total': 0,
     'counts': [],
     'arc': {},
-    'version': 5,
+    'version': 6,
 }
 
 # This should be a lambda but pickle can't pickle a lambda.
@@ -118,6 +118,11 @@ def process_locations(rows):
             if country in REDACTED:
                 continue
             try:
+                # Sometimes maxmind gives us regions named '  ' or '00'. Those
+                # are invalid. The frontend expects invalid regions named ''.
+                if region.strip() in ('', '00'):
+                    region = ''
+                    log.debug('Renaming region: %s.' % key)
                 continent = continents[country]
                 arc[continent][country][region][city] += val
                 new.append((continent, country, region, city,
