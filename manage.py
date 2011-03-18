@@ -14,6 +14,7 @@ import argparse
 
 import log_settings
 import glow
+import po2js
 
 
 def shell():
@@ -29,6 +30,7 @@ COMMANDS = {
     'shell': shell,
     'glow': glow.main,
     'cleanup': glow.cleanup,
+    'po': po2js.main,
 }
 
 
@@ -40,7 +42,7 @@ parser.add_argument('command', choices=sorted(COMMANDS),
 if __name__ == '__main__':
     args = parser.parse_args(sys.argv[1:2])
     try:
-        COMMANDS[args.command]()
+        COMMANDS[args.command](*sys.argv[2:])
     except KeyboardInterrupt:
         raise
         pass  # Die quietly.
