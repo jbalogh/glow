@@ -62,13 +62,21 @@ def main(src, dst):
         default = path.path('locale/countries/en-US.json')
         countries = path.path('locale/countries/%s.json' %
                               lang.replace('_', '-'))
+        regions = path.path('locale/%s/regions.json' % lang)
+        cities = path.path('locale/%s/cities.json' % lang)
         if not countries.exists():
             print '*' * 30, 'missing', lang
             countries = default
         with codecs.open(out / 'countries.js', 'w', 'utf-8') as fd:
             d = dict((k.upper(), v)
                      for k, v in json.load(countries.open()).items())
-            fd.write('var _countries = ' + json.dumps(d))
+            if regions.exists():
+                print 'Adding regions for', lang
+                d.update(json.load(regions.open()))
+            if cities.exists():
+                print 'Adding cities for', lang
+                d.update(json.load(cities.open()))
+            fd.write('var _countries = %s;' % json.dumps(d, separators=(',', ':')))
     lo = ["'%s'" % x.lower() for x in locales]
     print '$locales = array(%s);' % ', '.join(lo)
 
