@@ -238,15 +238,15 @@ def now():
 def do_the_stuff_to_the_thing():
     dt = now()
     next = dt + timedelta(minutes=1)
-    # Wait until :30 to give Hbase some processing time.
-    if dt.second < 30:
-        log.info('Waiting until :30 past.')
-        time.sleep(30 - dt.second)
+    # Wait until :15 to give Hbase some processing time.
+    if dt.second < 15:
+        log.info('Waiting until :15 past.')
+        time.sleep(15 - dt.second)
 
     collect(dt)
 
     # Sleep until the next minute comes around.
-    wait = next.replace(second=30) - now().replace(microsecond=0)
+    wait = next.replace(second=15) - now().replace(microsecond=0)
     # The delta will be around -1 days, 86400 seconds if we're into the next
     # minute already.
     if wait.seconds <= 60:
