@@ -95,6 +95,9 @@ def extend_counts(counts):
         G['total'] += count
         G['counts'].append((t, G['total']))
     G['counts'] = G['counts'][-60:]
+    if len(G['counts']) == 1:
+        t = datetime(*G['counts'][0][0])
+        G['counts'].insert(0, (t.utctimetuple()[:5], 0))
 
 
 def process_locations(rows):
