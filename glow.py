@@ -47,7 +47,7 @@ G = {
     'total': 0,
     'counts': [],
     'arc': {},
-    'version': 6,
+    'version': 7,
 }
 
 # This should be a lambda but pickle can't pickle a lambda.
