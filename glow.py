@@ -47,7 +47,7 @@ G = {
     'total': 0,
     'counts': [],
     'arc': {},
-    'version': 7,
+    'version': 8,
 }
 
 # This should be a lambda but pickle can't pickle a lambda.
@@ -296,6 +296,9 @@ def load_state():
             log.info('Loading backup pickle.')
             d = pickle.load(open(BACKUP))
 
+    if d['G'].get('version') == 7:
+        upgrade_7to8(d['G'])
+
     if d['G'].get('version') == G['version']:
         for k, v in d['G'].items():
             G[k] = v
@@ -319,6 +322,16 @@ def load_state():
     if now().minute == d['last_update'].minute:
         log.info('Waiting for the minute to roll over.')
         time.sleep(60 - now().second)
+
+
+def upgrade_7to8(d):
+    d['version'] = 8
+    alfred = d['arc']['NA']['US']['NY']['Alfred']
+    log.info('Removing %s downloads from Alfred.' % alfred)
+    d['counts'] = [(a, b - alfred) for a, b in d['counts']]
+    log.info('Adjusting count: %s => %s' % (d['total'], d['total'] - alfred))
+    d['total'] -= alfred
+    d['arc']['NA']['US']['NY']['Alfred'] = 0
 
 #
 # 4. Cleanup.
