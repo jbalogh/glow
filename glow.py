@@ -112,6 +112,7 @@ def process_locations(rows):
     continents, countries, regions = geo
     rv = []
     total = 0
+    alfred = 0
     for row in rows:
         new = []
         # We localize country names on the client.
@@ -129,6 +130,9 @@ def process_locations(rows):
                 # (0, 0) means the download is from a satellite/proxy.
                 if float(lat) == float(lon) == 0:
                     continue
+                if (country, region, city) == ('US', 'NY', 'Alfred'):
+                    alfred += 1
+                    continue
                 continent = continents[country]
                 arc[continent][country][region][city] += val
                 new.append((continent, country, region, city,
@@ -137,6 +141,7 @@ def process_locations(rows):
                 log.error('skipping key: %s' % key, exc_info=True)
                 pass
         rv.append((total, new))
+    log.info('Skipping Alfred, NY: %s.' % alfred)
     return rv
 
 
